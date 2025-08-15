@@ -1,46 +1,45 @@
 import { colors } from "@/constants/colors";
-import { useDataStore } from "@/store/data";
+// import { useDataStore } from "@/store/data"; // ✅ 1. REMOVA OU COMENTE ESTA LINHA
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { Link, router } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router"; // ✅ 2. IMPORTE useLocalSearchParams
 import { Pressable, ScrollView, StyleSheet, Text, View, Share, ActivityIndicator } from "react-native";
-import { Data } from "../../types/data";
 import { api } from "../services/api";
 
-interface ResponseData {
-    data: Data;
+// --- As interfaces e componentes (MealCard, etc) continuam iguais ---
+interface ComposicaoAlimento {
+  alimento: string;
+  quantidade: string;
 }
-
-// --- Definição de Tipos ---
-// Definimos o formato (a "interface") de um objeto de refeição.
 interface RefeicaoType {
-  nome: string;
-  horario: string;
-  alimentos: string[];
+    nome: string;
+    horario: string;
+    composicao: ComposicaoAlimento[];
 }
-
-// Dizemos que as props do MealCard devem conter um objeto 'refeicao' com o formato acima.
+interface ResponseData {
+    nome: string;
+    sexo: string;
+    idade: number;
+    altura: number;
+    peso: number;
+    objetivo: string;
+    refeicoes: RefeicaoType[];
+    suplementos: string[];
+    taxa_metabolica_basal_diario: number;
+    gasto_metabolico_basal: number;
+}
 interface MealCardProps {
-  refeicao: RefeicaoType;
+    refeicao: RefeicaoType;
 }
-
-// Dizemos que as props do SupplementsCard devem conter um array de strings chamado 'suplementos'.
 interface SupplementsCardProps {
-  suplementos: string[];
+    suplementos: string[];
 }
-
-
-// --- Componentes Internos para melhor organização ---
-
-// Componente para o estado de Carregamento
 const LoadingScreen = () => (
     <View style={styles.statusContainer}>
         <ActivityIndicator size="large" color={colors.white} />
         <Text style={styles.statusText}>Gerando sua dieta...</Text>
     </View>
 );
-
-// Componente para o estado de Erro
 const ErrorScreen = () => (
     <View style={styles.statusContainer}>
         <Text style={styles.statusText}>Falha ao gerar dieta</Text>
@@ -49,76 +48,79 @@ const ErrorScreen = () => (
         </Link>
     </View>
 );
-
-// Componente para o Cartão de Refeição (AGORA COM TIPOS)
-const MealCard = ({ refeicao }: MealCardProps) => ( // << AQUI aplicamos o tipo
+const MealCard = ({ refeicao }: MealCardProps) => (
     <View style={styles.cardItem}>
         <View style={styles.itemHeader}>
             <Text style={styles.itemName}> {refeicao.nome} </Text>
             <Ionicons name="restaurant-outline" size={20} color={colors.black} />
         </View>
-
         <View style={styles.itemContent}>
             <Feather name="clock" size={14} color={colors.black} />
             <Text>Horário: {refeicao.horario}</Text>
         </View>
-
         <View style={styles.foodList}>
-            <Text style={styles.itemSubtitle}>Alimentos:</Text>
-            {/* Agora o TypeScript sabe que 'alimento' é uma string! */}
-            {refeicao.alimentos.map((alimento) => (
-                <Text key={alimento} style={styles.foodListItem}>- {alimento}</Text>
+            <Text style={styles.itemSubtitle}>Composição:</Text>
+            {(refeicao.composicao ?? []).map((item) => (
+                <Text key={item.alimento} style={styles.foodListItem}>
+                    - {item.alimento} ({item.quantidade})
+                </Text>
             ))}
         </View>
     </View>
 );
-
-// Componente para o Cartão de Suplementos (AGORA COM TIPOS)
-const SupplementsCard = ({ suplementos }: SupplementsCardProps) => ( // << AQUI aplicamos o tipo
+const SupplementsCard = ({ suplementos }: SupplementsCardProps) => (
      <View style={[styles.card, { marginBottom: 24 }]}>
         <Text style={styles.cardTitle}>Dica de suplementos</Text>
-        {/* Agora o TypeScript sabe que 'item' é uma string! */}
-        {suplementos.map((item) => (
+        {(suplementos ?? []).map((item) => (
             <Text key={item} style={styles.foodListItem}>{item}</Text>
         ))}
     </View>
 );
-
+// --------------------------------------------------------------------------
 
 export default function Nutrition() {
-    const user = useDataStore((state) => state.user);
+    // const user = useDataStore((state) => state.user); // ✅ 3. ESTA LINHA NÃO É MAIS NECESSÁRIA
+
+    const params = useLocalSearchParams(); // ✅ 4. PEGUE TODOS OS DADOS DA ROTA
 
     const { data, isFetching, error } = useQuery({
         queryKey: ["nutrition"],
         queryFn: async () => {
-            if (!user) {
-                throw new Error("Usuário não encontrado para gerar a dieta.");
+            // ✅ 5. VERIFIQUE SE OS PARÂMETROS EXISTEM
+            if (!params.nome) { // Podemos checar por qualquer campo, como o nome.
+                throw new Error("Dados do usuário não encontrados para gerar a dieta.");
             }
-            const response = await api.post<ResponseData>("/create", {
-                name: user.name,
-                age: user.age,
-                gender: user.gender,
-                height: user.height,
-                weight: user.weight,
-                objective: user.objective,
-                level: user.level
+            
+            // ✅ 6. USE O OBJETO `params` DIRETAMENTE NA CHAMADA DA API
+            const response = await api.post<{ data: ResponseData }>("/create", {
+                name: params.nome,
+                age: params.idade,
+                gender: params.sexo,
+                height: params.altura,
+                weight: params.peso,
+                objective: params.objetivo,
+                level: params.nivel
             });
+
+            console.log("RESPOSTA DA API:", JSON.stringify(response.data, null, 2));
             return response.data.data;
         },
-        retry: false, 
+        retry: false,
     });
 
+    // A função handleShare e o resto do componente continuam iguais
     async function handleShare() {
         if (!data) return;
-
-        const mealsText = data.refeicoes
-            .map(item => `\n- ${item.nome} (${item.horario}):\n  ${item.alimentos.join(', ')}`)
+        const mealsText = (data.refeicoes ?? [])
+            .map((refeicao: RefeicaoType) => {
+                const composicaoText = (refeicao.composicao ?? [])
+                    .map(item => `  - ${item.alimento} (${item.quantidade})`)
+                    .join('\n');
+                return `\n- ${refeicao.nome} (${refeicao.horario}):\n${composicaoText}`;
+            })
             .join('');
-
-        const supplementsText = data.suplementos.join(', ');
-
+        const supplementsText = (data.suplementos ?? []).join(', ');
         const message = `Dieta: ${data.nome} - Objetivo: ${data.objetivo}\n\nRefeições:${mealsText}\n\n- Dica de suplementos: ${supplementsText}`;
-
         await Share.share({ message });
     }
 
@@ -147,13 +149,23 @@ export default function Nutrition() {
                 <Text style={styles.objective}>Foco: {data.objetivo}</Text>
 
                 <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Resumo Metabólico</Text>
+                    <Text style={styles.foodListItem}>
+                        Taxa Metabólica Basal Diária: {data.taxa_metabolica_basal_diario} kcal
+                    </Text>
+                    <Text style={styles.foodListItem}>
+                        Gasto Metabólico Basal: {data.gasto_metabolico_basal} kcal
+                    </Text>
+                </View>
+
+                <View style={styles.card}>
                     <Text style={styles.cardTitle}>Refeições</Text>
-                    {data.refeicoes.map((refeicao) => (
+                    {(data.refeicoes ?? []).map((refeicao: RefeicaoType) => (
                         <MealCard key={refeicao.nome} refeicao={refeicao} />
                     ))}
                 </View>
 
-                <SupplementsCard suplementos={data.suplementos} />
+                <SupplementsCard suplementos={data.suplementos ?? []} />
 
                 <Pressable style={styles.button} onPress={() => router.replace("/")}>
                     <Text style={styles.buttonText}>Gerar Nova Dieta</Text>
@@ -162,7 +174,6 @@ export default function Nutrition() {
         </View>
     );
 }
-
 
 // Estilos (sem alterações)
 const styles = StyleSheet.create({
@@ -196,7 +207,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.white,
         borderBottomLeftRadius: 16,
         borderBottomRightRadius: 16,
-        paddingTop: 60, 
+        paddingTop: 60,
         paddingBottom: 20,
         paddingHorizontal: 16,
         marginBottom: 24,

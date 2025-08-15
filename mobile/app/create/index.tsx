@@ -3,12 +3,12 @@ import { Header } from "@/components/header";
 import { colors } from "../../constants/colors";
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, Controller } from 'react-hook-form'; // Importar o Controller
+import { useForm, Controller } from 'react-hook-form';
 import { useDataStore } from "@/store/data";
-import { router } from "expo-router";
-import { ChoiceSelector } from "@/components/ChoiceSelector/ChoiceSelector"; // Nosso novo componente
+// 1. Importe o useLocalSearchParams para pegar os dados da rota
+import { router, useLocalSearchParams } from "expo-router"; 
+import { ChoiceSelector } from "@/components/ChoiceSelector/ChoiceSelector";
 
-// ... (seu schema e type FormData continuam os mesmos)
 const schema = z.object({
     gender: z.string().min(1, { message: "O sexo é obrigatório" }),
     objective: z.string().min(1, { message: "O objetivo é obrigatório" }),
@@ -18,14 +18,15 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function Create() {
-    // ... (sua lógica do useForm, options e handleCreate continua a mesma)
+    // 2. Pegue os parâmetros da rota (nome, peso, etc. da tela anterior)
+    const stepOneData = useLocalSearchParams();
+
     const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
     });
     
     const setPageTwo = useDataStore(state => state.setPageTwo);
 
-    // Corrigindo um pequeno erro de digitação no seu array original
     const levelOptions = [
         { label: 'Sedentário', value: 'sedentario', description: 'Pouco ou nenhuma atividade física' },
         { label: 'Levemente Ativo', value: 'levemente_ativo', description: 'Exercícios 1 a 3 vezes na semana' },
@@ -43,13 +44,28 @@ export default function Create() {
         { label: 'Definição', value: 'definicao' },
     ];
 
+    // 3. Modifique a função handleCreate
     function handleCreate(data: FormData) {
+        // Salva os dados desta página no seu store (como você já fazia)
         setPageTwo({
             level: data.level,
             gender: data.gender,
             objective: data.objective,
         });
-        router.push("/nutrition");
+
+        // Junta os dados da tela anterior com os dados desta tela
+        const allData = {
+            ...stepOneData, // nome, peso, idade, altura
+            sexo: data.gender, // renomeie se sua API esperar 'sexo'
+            objetivo: data.objective,
+            nivel: data.level, // renomeie se sua API esperar 'nivel'
+        };
+
+        // Envia TUDO para a próxima tela (/nutrition)
+        router.push({
+            pathname: "/nutrition",
+            params: allData,
+        });
     }
 
     return (
@@ -69,7 +85,7 @@ export default function Create() {
                             options={genderOptions}
                             onSelect={onChange}
                             selectedValue={value}
-                            horizontal // Prop para deixar lado a lado
+                            horizontal
                         />
                     )}
                 />
@@ -116,7 +132,6 @@ export default function Create() {
     );
 }
 
-// No seu arquivo Create.jsx
 const styles = StyleSheet.create({
     container: {
         flex: 1,
