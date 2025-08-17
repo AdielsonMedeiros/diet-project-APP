@@ -10,13 +10,17 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
-import { auth } from "../config/firebaseConfig"; // Caminho correto para o auth centralizado
+import { auth } from "../config/firebaseConfig";
 
+// ✅ Cores atualizadas para o tema escuro
 const colors = {
   background: "#121212",
   green: "#1DB954",
   white: "#FFFFFF",
+  grey: "#B3B3B3",
+  inputBackground: '#3A3A3A',
 };
 
 export default function Index() {
@@ -37,13 +41,13 @@ export default function Index() {
     } catch (error) {
       console.log(error);
       // @ts-ignore
-      if (error.code === "auth/user-not-found") {
-        Alert.alert("Erro", "Usuário não encontrado.");
+      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
+        Alert.alert("Erro", "E-mail ou senha inválidos.");
       // @ts-ignore
       } else if (error.code === "auth/wrong-password") {
         Alert.alert("Erro", "Senha incorreta.");
       } else {
-        Alert.alert("Erro de Login", "E-mail ou senha inválidos.");
+        Alert.alert("Erro de Login", "Não foi possível fazer o login.");
       }
     } finally {
       setLoading(false);
@@ -51,11 +55,15 @@ export default function Index() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding">
+    <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <View style={styles.innerContainer}>
+        {/* ✅ MUDANÇA: A imagem agora é carregada com require() */}
         <Image
           style={styles.logo}
-          source={{ uri: "https://placehold.co/80x80/121212/1DB954?text=N" }}
+          source={require("../assets/images/logoprojeto.png")}
         />
         <Text style={styles.title}>
           Nutri<Text style={{ color: colors.white }}>.io</Text>
@@ -64,17 +72,21 @@ export default function Index() {
         <TextInput
           style={styles.input}
           placeholder="Seu e-mail"
+          placeholderTextColor={colors.grey}
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
+          keyboardAppearance="dark"
         />
         <TextInput
           style={styles.input}
           placeholder="Sua senha"
+          placeholderTextColor={colors.grey}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
+          keyboardAppearance="dark"
         />
         <TouchableOpacity
           style={styles.button}
@@ -85,14 +97,19 @@ export default function Index() {
             {loading ? "Entrando..." : "Entrar"}
           </Text>
         </TouchableOpacity>
-        <Link href="/register" style={styles.linkText}>
-          Não tem uma conta? Crie uma
+        <Link href="/register" asChild>
+            <TouchableOpacity>
+                <Text style={styles.linkText}>
+                    Não tem uma conta? Crie uma
+                </Text>
+            </TouchableOpacity>
         </Link>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
+// ✅ Estilos atualizados
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
@@ -126,11 +143,11 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     height: 50,
-    backgroundColor: "#fff",
+    backgroundColor: colors.inputBackground,
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: "#000",
+    color: colors.white,
     marginBottom: 12,
   },
   button: {
@@ -152,6 +169,5 @@ const styles = StyleSheet.create({
     color: colors.white,
     marginTop: 24,
     fontSize: 14,
-    textDecorationLine: "underline",
   },
 });
