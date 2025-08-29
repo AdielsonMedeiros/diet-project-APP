@@ -12,10 +12,14 @@ import {
   View,
 } from "react-native";
 import { z } from "zod";
-import { Feather } from '@expo/vector-icons'; // ✅ 1. Importar a biblioteca de ícones
+import { Feather } from '@expo/vector-icons';
 
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../config/firebaseConfig";
+
+
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const colors = {
   background: "#121212",
@@ -26,10 +30,9 @@ const colors = {
   inputBackground: '#3A3A3A', 
 };
 
-// ✅ 2. Componente Header atualizado para incluir a seta
 type HeaderProps = {
   title: string;
-  onBackPress: () => void; // Função para ser chamada ao clicar na seta
+  onBackPress: () => void;
 };
 
 const Header = ({ title, onBackPress }: HeaderProps) => (
@@ -43,7 +46,6 @@ const Header = ({ title, onBackPress }: HeaderProps) => (
   </View>
 );
 
-// Componente Input (sem alterações na lógica)
 type InputProps = {
   control: any;
   name: string;
@@ -84,7 +86,6 @@ const Input: React.FC<InputProps> = ({
   </>
 );
 
-// Validação com Zod (sem alterações)
 const schema = z.object({
   name: z.string().min(1, { message: "O nome é obrigatório" }),
   weight: z.string().min(1, { message: "O peso é obrigatório" }),
@@ -141,8 +142,11 @@ export default function Step() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* ✅ 3. Chamada do Header atualizada para passar a função de voltar */}
+    
+    <SafeAreaView style={styles.container}>
+      
+      <StatusBar style="light" backgroundColor="transparent" translucent />
+
       <Header title="Etapa 1 de 2" onBackPress={() => router.push('/')} />
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Text style={styles.label}>Nome Completo:</Text>
@@ -192,35 +196,35 @@ export default function Step() {
           <Text style={styles.buttonText}>Prosseguir</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  // ✅ 4. Novos estilos para o Header
+  
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 0,
+    paddingVertical: 12, 
+    marginBottom: 16,    
   },
   backButton: {
-    marginRight: 16, // Espaço entre a seta e o texto
-    padding: 4, // Aumenta a área de toque
+    marginRight: 16,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: colors.white,
   },
-  contentContainer: { flexGrow: 1, padding: 24 },
+  contentContainer: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 24 }, 
   label: {
     fontSize: 16,
     color: colors.white,
     fontWeight: "bold",
-    marginTop: 24,
+    marginTop: 16, 
     marginBottom: 8,
   },
   row: { flexDirection: "row", gap: 16 },

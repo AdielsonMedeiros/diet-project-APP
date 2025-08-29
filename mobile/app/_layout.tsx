@@ -1,47 +1,30 @@
 import { Stack } from "expo-router";
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   
-  const queryClient = new QueryClient()
+  const queryClient = new QueryClient();
 
   return (
-
-
-    <QueryClientProvider client={queryClient}>
-
-      <Stack>
-
-        <Stack.Screen
-          name="index"
-          options={{
-            headerShown: false
+    
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+       
+        <Stack
+          screenOptions={{
+            statusBarStyle: 'light', 
+            headerShown: false,      
           }}
-          />
-
-      <Stack.Screen
-          name="step/index"
-          options={{
-            headerShown: false,
-          }}
-          />
-
-      <Stack.Screen
-          name="create/index"
-          options={{
-            headerShown: false,
-          }}
-          />
-
-      <Stack.Screen
-          name="nutrition/index"
-          options={{
-            headerShown: false,
-          }}
-          />
-
-      </Stack>
-  </QueryClientProvider>
+        >
+          
+          <Stack.Screen name="index" />
+          <Stack.Screen name="step/index" />
+          <Stack.Screen name="create/index" />
+          <Stack.Screen name="nutrition/index" />
+        </Stack>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

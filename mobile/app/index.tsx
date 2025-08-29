@@ -14,7 +14,11 @@ import {
 } from "react-native";
 import { auth } from "../config/firebaseConfig";
 
-// ✅ Cores atualizadas para o tema escuro
+
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+
 const colors = {
   background: "#121212",
   green: "#1DB954",
@@ -39,13 +43,17 @@ export default function Index() {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace("/step");
     } catch (error) {
-      console.log(error);
-      // @ts-ignore
-      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
-        Alert.alert("Erro", "E-mail ou senha inválidos.");
-      // @ts-ignore
-      } else if (error.code === "auth/wrong-password") {
-        Alert.alert("Erro", "Senha incorreta.");
+      if (typeof error === "object" && error !== null && "code" in error) {
+        const err = error as { code: string };
+        console.log(err);
+
+        if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
+          Alert.alert("Erro", "E-mail ou senha inválidos.");
+        } else if (err.code === "auth/wrong-password") {
+          Alert.alert("Erro", "Senha incorreta.");
+        } else {
+          Alert.alert("Erro de Login", "Não foi possível fazer o login.");
+        }
       } else {
         Alert.alert("Erro de Login", "Não foi possível fazer o login.");
       }
@@ -55,61 +63,71 @@ export default function Index() {
   }
 
   return (
-    <KeyboardAvoidingView 
-        style={styles.container} 
+    
+    
+    <SafeAreaView style={styles.container}>
+      <StatusBar 
+        style="dark" 
+        backgroundColor="transparent" 
+        translucent 
+      />
+      
+     
+      <KeyboardAvoidingView
+        style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.innerContainer}>
-        {/* ✅ MUDANÇA: A imagem agora é carregada com require() */}
-        <Image
-          style={styles.logo}
-          source={require("../assets/images/logoprojeto.png")}
-        />
-        <Text style={styles.title}>
-          Nutri<Text style={{ color: colors.white }}>.io</Text>
-        </Text>
-        <Text style={styles.text}>Acesse sua conta para continuar</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Seu e-mail"
-          placeholderTextColor={colors.grey}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-          keyboardAppearance="dark"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Sua senha"
-          placeholderTextColor={colors.grey}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          keyboardAppearance="dark"
-        />
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? "Entrando..." : "Entrar"}
+      >
+        <View style={styles.innerContainer}>
+          <Image
+            style={styles.logo}
+            source={require("../assets/images/logoprojeto.png")}
+          />
+          <Text style={styles.title}>
+            Nutri<Text style={{ color: colors.white }}>.io</Text>
           </Text>
-        </TouchableOpacity>
-        <Link href="/register" asChild>
+          <Text style={styles.text}>Acesse sua conta para continuar</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Seu e-mail"
+            placeholderTextColor={colors.grey}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            keyboardAppearance="dark"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Sua senha"
+            placeholderTextColor={colors.grey}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            keyboardAppearance="dark"
+          />
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Text>
+          </TouchableOpacity>
+          <Link href="/register" asChild>
             <TouchableOpacity>
-                <Text style={styles.linkText}>
-                    Não tem uma conta? Crie uma
-                </Text>
+              <Text style={styles.linkText}>
+                Não tem uma conta? Crie uma
+              </Text>
             </TouchableOpacity>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+          </Link>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-// ✅ Estilos atualizados
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
